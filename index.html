@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Karte</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+:root{--ui:#fff;--ui2:#f1f3f4;--tx:#202124;--tx2:#5f6368;--ac:#1a73e8;--sh:0 2px 10px rgba(0,0,0,.28)}
+@media (prefers-color-scheme:dark){:root{--ui:#2a2b2e;--ui2:#3a3c40;--tx:#e8eaed;--tx2:#a0a4aa;--ac:#8ab4f8;--sh:0 2px 10px rgba(0,0,0,.6)}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;color:var(--tx);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#map{position:fixed;inset:0}
+.top{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 12px);max-width:440px;z-index:1000}
+.bar{display:flex;align-items:center;background:var(--ui);border-radius:26px;box-shadow:var(--sh);padding:0 14px;height:48px;gap:10px}
+.bar input{flex:1;border:0;background:none;font:inherit;color:var(--tx);outline:none;min-width:0}
+.list{margin-top:6px;background:var(--ui);border-radius:16px;box-shadow:var(--sh);max-height:50vh;overflow:auto;display:none}
+.list.on{display:block}
+.row{display:block;padding:10px 14px;cursor:pointer;border:0;background:none;width:100%;text-align:left;font:inherit;color:var(--tx)}
+.row:hover,.row:focus-visible{background:var(--ui2);outline:none}
+.row small{display:block;color:var(--tx2)}
+.fabs{position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);display:flex;flex-direction:column;gap:10px;z-index:1000;transition:bottom .2s}
+.fabs.up{bottom:calc(env(safe-area-inset-bottom,0px) + 230px)}
+.fab{width:44px;height:44px;border-radius:50%;border:0;background:var(--ui);box-shadow:var(--sh);color:var(--tx);font-size:20px;cursor:pointer}
+.fab:focus-visible,.btn:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:1001;background:var(--ui);border-radius:22px 22px 0 0;box-shadow:0 -2px 14px rgba(0,0,0,.3);padding:16px 18px calc(env(safe-area-inset-bottom,0px) + 18px);max-width:520px;margin:0 auto;transform:translateY(110%);transition:transform .25s}
+.sheet.on{transform:none}
+.sheet h2{margin:0;font-size:19px;padding-right:28px}
+.sheet p{margin:2px 0 12px;color:var(--tx2)}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--ui2);background:var(--ui2);color:var(--tx);border-radius:20px;padding:9px 16px;font:inherit;cursor:pointer}
+.btn.p{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn[aria-pressed="true"]{background:var(--ac);color:#fff}
+.eta{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--ui2)}
+.eta.on{display:block}
+.eta b{font-size:22px}
+.x{position:absolute;right:12px;top:10px;border:0;background:none;color:var(--tx2);font-size:24px;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="top">
+  <div class="bar"><span aria-hidden="true">🔍</span><input id="q" type="search" placeholder="Ort oder Adresse suchen" autocomplete="off" aria-label="Suche"></div>
+  <div class="list" id="list"></div>
+</div>
+<div class="fabs" id="fabs">
+  <button class="fab" id="sat" title="Satellit ein/aus" aria-label="Satellit ein oder aus">🛰</button>
+  <button class="fab" id="loc" title="Mein Standort" aria-label="Mein Standort">◎</button>
+</div>
+<div class="sheet" id="sheet" role="dialog" aria-live="polite">
+  <button class="x" id="close" aria-label="Schließen">×</button>
+  <h2 id="sn"></h2><p id="sd"></p>
+  <div class="acts"><button class="btn p" id="go">Route von meinem Standort</button></div>
+  <div class="eta" id="eta">
+    <div class="acts" style="margin-bottom:8px">
+      <button class="btn" data-m="car" aria-pressed="true">🚗 Auto</button>
+      <button class="btn" data-m="bike" aria-pressed="false">🚲 Rad</button>
+      <button class="btn" data-m="foot" aria-pressed="false">🚶 Zu Fuß</button>
+    </div>
+    <b id="et"></b> <span id="ed" style="color:var(--tx2)"></span>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+var map=L.map('map',{zoomControl:false}).setView([51.45,6.8],10);
+L.control.zoom({position:'bottomleft'}).addTo(map);
+var osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap-Mitwirkende'}).addTo(map);
+var satGroup=L.layerGroup([
+ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Bilder © Esri, Maxar, Earthstar Geographics'}),
+ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:19})]);
+var sat=false;
+document.getElementById('sat').onclick=function(){sat=!sat;if(sat){map.removeLayer(osm);satGroup.addTo(map)}else{map.removeLayer(satGroup);osm.addTo(map)}};
+
+var $=function(i){return document.getElementById(i)},mark=null,me=null,meMark=null,route=null,target=null,mode='car';
+function esc(t){return String(t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+// Suche (Nominatim, weltweit)
+var tm=null,q=$('q'),list=$('list');
+q.addEventListener('input',function(){clearTimeout(tm);var t=q.value.trim();if(t.length<2){list.classList.remove('on');return}tm=setTimeout(function(){search(t)},400)});
+q.addEventListener('keydown',function(e){if(e.key==='Enter'){var f=list.querySelector('button');if(f)f.click()}});
+function search(t){
+ fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=7&accept-language=de&q='+encodeURIComponent(t))
+ .then(function(r){return r.json()}).then(function(r){
+  list.innerHTML='';
+  if(!r.length)list.innerHTML='<div class="row">Keine Treffer.</div>';
+  r.forEach(function(p){var b=document.createElement('button');b.className='row';
+   var parts=p.display_name.split(', ');
+   b.innerHTML='<b>'+esc(parts[0])+'</b><small>'+esc(parts.slice(1,4).join(', '))+'</small>';
+   b.onclick=function(){list.classList.remove('on');q.blur();show(+p.lat,+p.lon,p.display_name,p.boundingbox)};list.appendChild(b)});
+  list.classList.add('on')}).catch(function(){list.innerHTML='<div class="row">Suche nicht erreichbar. Prüfe deine Verbindung.</div>';list.classList.add('on')});
+}
+function show(lat,lon,name,bb){
+ target=[lat,lon];if(route){map.removeLayer(route);route=null}$('eta').classList.remove('on');
+ if(mark)map.removeLayer(mark);mark=L.marker(target).addTo(map);
+ var parts=name.split(', ');$('sn').textContent=parts[0];$('sd').textContent=parts.slice(1,5).join(', ');
+ $('sheet').classList.add('on');$('fabs').classList.add('up');
+ if(bb)map.fitBounds([[+bb[0],+bb[2]],[+bb[1],+bb[3]]],{maxZoom:17,paddingBottomRight:[0,200]});else map.setView(target,16);
+}
+// Tippen auf die Karte = Ort wählen
+map.on('click',function(e){list.classList.remove('on');
+ fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=de&zoom=18&lat='+e.latlng.lat+'&lon='+e.latlng.lng)
+ .then(function(r){return r.json()}).then(function(p){show(e.latlng.lat,e.latlng.lng,p.display_name||e.latlng.lat.toFixed(5)+', '+e.latlng.lng.toFixed(5))})
+ .catch(function(){show(e.latlng.lat,e.latlng.lng,e.latlng.lat.toFixed(5)+', '+e.latlng.lng.toFixed(5))})});
+$('close').onclick=function(){$('sheet').classList.remove('on');$('fabs').classList.remove('up');if(mark){map.removeLayer(mark);mark=null}if(route){map.removeLayer(route);route=null}};
+
+// Standort
+function locate(cb){
+ map.once('locationfound',function(e){me=e.latlng;if(meMark)map.removeLayer(meMark);
+  meMark=L.circleMarker(me,{radius:8,color:'#fff',weight:3,fillColor:'#1a73e8',fillOpacity:1}).addTo(map);cb&&cb()});
+ map.once('locationerror',function(){$('ed').textContent='Standort nicht verfügbar. Erlaube den Standortzugriff im Browser.';$('eta').classList.add('on');$('et').textContent=''});
+ map.locate({enableHighAccuracy:true});
+}
+$('loc').onclick=function(){locate(function(){map.setView(me,15)})};
+
+// Route (OSRM)
+var EP={car:'https://router.project-osrm.org/route/v1/driving/',bike:'https://routing.openstreetmap.de/routed-bike/route/v1/driving/',foot:'https://routing.openstreetmap.de/routed-foot/route/v1/driving/'};
+function calc(){
+ if(!me||!target)return;
+ fetch(EP[mode]+me.lng+','+me.lat+';'+target[1]+','+target[0]+'?overview=full&geometries=geojson')
+ .then(function(r){return r.json()}).then(function(d){
+  if(!d.routes||!d.routes.length){$('et').textContent='';$('ed').textContent='Keine Route gefunden.';return}
+  var r=d.routes[0];if(route)map.removeLayer(route);
+  route=L.geoJSON(r.geometry,{style:{color:'#1a73e8',weight:6,opacity:.9}}).addTo(map);
+  map.fitBounds(route.getBounds(),{paddingTopLeft:[30,90],paddingBottomRight:[30,260]});
+  var m=Math.round(r.duration/60);
+  $('et').textContent=m<60?m+' Min.':Math.floor(m/60)+' Std. '+(m%60)+' Min.';
+  $('ed').textContent=r.distance>=1000?(r.distance/1000).toFixed(1).replace('.',',')+' km':Math.round(r.distance)+' m';
+ }).catch(function(){$('et').textContent='';$('ed').textContent='Routenserver nicht erreichbar.'});
+}
+$('go').onclick=function(){$('eta').classList.add('on');$('et').textContent='…';$('ed').textContent='';if(me)calc();else locate(calc)};
+document.querySelectorAll('[data-m]').forEach(function(b){b.onclick=function(){mode=b.dataset.m;
+ document.querySelectorAll('[data-m]').forEach(function(o){o.setAttribute('aria-pressed',o===b)});calc()}});
+</script>
+</body>
+</html>
