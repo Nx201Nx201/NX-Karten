@@ -20,7 +20,7 @@ html,body{height:100%;margin:0;color:var(--tx);font:15px/1.4 system-ui,-apple-sy
 .row:hover,.row:focus-visible{background:var(--ui2);outline:none}
 .row small{display:block;color:var(--tx2)}
 .fabs{position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);display:flex;flex-direction:column;gap:10px;z-index:1000;transition:bottom .2s}
-.fabs.up{bottom:calc(env(safe-area-inset-bottom,0px) + 230px)}
+.fabs.up{bottom:calc(env(safe-area-inset-bottom,0px) + 300px)}
 .fab{width:44px;height:44px;border-radius:50%;border:0;background:var(--ui);box-shadow:var(--sh);color:var(--tx);font-size:20px;cursor:pointer}
 .fab:focus-visible,.btn:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:1001;background:var(--ui);border-radius:22px 22px 0 0;box-shadow:0 -2px 14px rgba(0,0,0,.3);padding:16px 18px calc(env(safe-area-inset-bottom,0px) + 18px);max-width:520px;margin:0 auto;transform:translateY(110%);transition:transform .25s}
@@ -28,6 +28,7 @@ html,body{height:100%;margin:0;color:var(--tx);font:15px/1.4 system-ui,-apple-sy
 .sheet h2{margin:0;font-size:19px;padding-right:28px}
 .sheet p{margin:2px 0 12px;color:var(--tx2)}
 .acts{display:flex;gap:8px;flex-wrap:wrap}
+.mode-row{margin:10px 0}
 .btn{border:1px solid var(--ui2);background:var(--ui2);color:var(--tx);border-radius:20px;padding:9px 16px;font:inherit;cursor:pointer}
 .btn.p{background:var(--ac);border-color:var(--ac);color:#fff}
 .btn[aria-pressed="true"]{background:var(--ac);color:#fff}
@@ -36,6 +37,7 @@ html,body{height:100%;margin:0;color:var(--tx);font:15px/1.4 system-ui,-apple-sy
 .eta b{font-size:22px}
 .x{position:absolute;right:12px;top:10px;border:0;background:none;color:var(--tx2);font-size:24px;cursor:pointer}
 .legs{max-height:24vh;overflow:auto;margin-top:8px;color:var(--tx2);font-size:13px}
+.note{font-size:12px;color:var(--tx2);margin-top:6px}
 </style>
 </head>
 <body>
@@ -46,19 +48,21 @@ html,body{height:100%;margin:0;color:var(--tx);font:15px/1.4 system-ui,-apple-sy
 </div>
 <div class="fabs" id="fabs">
   <button class="fab" id="sat" title="Satellit ein/aus" aria-label="Satellit ein oder aus">🛰</button>
+  <button class="fab" id="street" title="Street View am Kartenausschnitt öffnen" aria-label="Street View öffnen">👁</button>
   <button class="fab" id="loc" title="Mein Standort" aria-label="Mein Standort">◎</button>
 </div>
 <div class="sheet" id="sheet" role="dialog" aria-live="polite">
   <button class="x" id="close" aria-label="Schließen">×</button>
   <h2 id="sn"></h2><p id="sd"></p>
-  <div class="acts"><button class="btn p" id="go">Route von meinem Standort</button></div>
+  <div class="acts mode-row" aria-label="Verkehrsmittel auswählen">
+    <button class="btn" data-m="car" aria-pressed="true">Auto</button>
+    <button class="btn" data-m="bike" aria-pressed="false">Rad</button>
+    <button class="btn" data-m="foot" aria-pressed="false">Zu Fuß</button>
+    <button class="btn" data-m="opnv" aria-pressed="false">ÖPNV</button>
+  </div>
+  <div class="acts"><button class="btn p" id="go">Route starten</button></div>
+  <div class="note">ÖPNV-Verbindungen weltweit, soweit Fahrplandaten verfügbar sind.</div>
   <div class="eta" id="eta">
-    <div class="acts" style="margin-bottom:8px">
-      <button class="btn" data-m="car" aria-pressed="true">Auto</button>
-      <button class="btn" data-m="bike" aria-pressed="false">Rad</button>
-      <button class="btn" data-m="foot" aria-pressed="false">Zu Fuß</button>
-      <button class="btn" data-m="opnv" aria-pressed="false">ÖPNV</button>
-    </div>
     <b id="et"></b> <span id="ed" style="color:var(--tx2)"></span>
     <div class="legs" id="legs"></div>
   </div>
@@ -77,51 +81,38 @@ document.getElementById('sat').onclick=function(){sat=!sat;if(sat){map.removeLay
 var $=function(i){return document.getElementById(i)},mark=null,me=null,meMark=null,route=null,target=null,mode='car',requestId=0;
 function esc(t){return String(t).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function clearRoute(){if(route){map.removeLayer(route);route=null}$('legs').innerHTML=''}
-function formatDuration(seconds){var m=Math.max(1,Math.round(seconds/60));return m<60?m+' Min.':Math.floor(m/60)+' Std. '+(m%60)+' Min.'}
-function decodePolyline(str, precision){
-  var points=[], index=0, lat=0, lng=0, factor=Math.pow(10, precision || 6);
-  while (index < str.length) {
-    var shift = 0, result = 0, b;
-    do {
-      b = str.charCodeAt(index++) - 63;
-      result |= (b & 31) << shift;
-      shift += 5;
-    } while (b >= 32 && index < str.length);
-    lat += (result & 1) ? ~(result >> 1) : (result >> 1);
-
-    shift = 0; result = 0;
-    do {
-      b = str.charCodeAt(index++) - 63;
-      result |= (b & 31) << shift;
-      shift += 5;
-    } while (b >= 32 && index < str.length);
-    lng += (result & 1) ? ~(result >> 1) : (result >> 1);
-    points.push([lat / factor, lng / factor]);
-  }
-  return points;
+function formatDuration(seconds){var m=Math.max(1,Math.round(Number(seconds)||0)/60);m=Math.round(m);return m<60?m+' Min.':Math.floor(m/60)+' Std. '+(m%60)+' Min.'}
+function decodePolyline(str,precision){
+ var points=[],index=0,lat=0,lng=0,factor=Math.pow(10,precision||6);
+ while(index<str.length){var shift=0,result=0,b;
+  do{if(index>=str.length)throw new Error('Ungültige Liniengeometrie');b=str.charCodeAt(index++)-63;result|=(b&31)<<shift;shift+=5}while(b>=32);
+  lat+=(result&1)?~(result>>1):(result>>1);shift=0;result=0;
+  do{if(index>=str.length)throw new Error('Ungültige Liniengeometrie');b=str.charCodeAt(index++)-63;result|=(b&31)<<shift;shift+=5}while(b>=32);
+  lng+=(result&1)?~(result>>1):(result>>1);points.push([lat/factor,lng/factor]);
+ }
+ return points;
 }
+function openStreetView(){var p=target?[target[0],target[1]]:[map.getCenter().lat,map.getCenter().lng];window.open('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint='+encodeURIComponent(p[0]+','+p[1]),'_blank','noopener,noreferrer')}
+$('street').onclick=openStreetView;
 
-// Suche (Nominatim, weltweit)
 var tm=null,q=$('q'),list=$('list');
 q.addEventListener('input',function(){clearTimeout(tm);var t=q.value.trim();if(t.length<2){list.classList.remove('on');return}tm=setTimeout(function(){search(t)},400)});
 q.addEventListener('keydown',function(e){if(e.key==='Enter'){var f=list.querySelector('button');if(f)f.click()}});
 function search(t){
  fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=7&accept-language=de&q='+encodeURIComponent(t))
  .then(function(r){if(!r.ok)throw new Error('Suche fehlgeschlagen');return r.json()}).then(function(r){
-  list.innerHTML='';
-  if(!r.length)list.innerHTML='<div class="row">Keine Treffer.</div>';
-  r.forEach(function(p){var b=document.createElement('button');b.className='row';
-   var parts=p.display_name.split(', ');
+  list.innerHTML='';if(!r.length)list.innerHTML='<div class="row">Keine Treffer.</div>';
+  r.forEach(function(p){var b=document.createElement('button');b.className='row';var parts=p.display_name.split(', ');
    b.innerHTML='<b>'+esc(parts[0])+'</b><small>'+esc(parts.slice(1,4).join(', '))+'</small>';
-   b.onclick=function(){list.classList.remove('on');q.blur();show(+p.lat,+p.lon,p.display_name,p.boundingbox)};list.appendChild(b)});
-  list.classList.add('on')}).catch(function(){list.innerHTML='<div class="row">Suche nicht erreichbar. Prüfe deine Verbindung.</div>';list.classList.add('on')});
+   b.onclick=function(){list.classList.remove('on');q.blur();show(+p.lat,+p.lon,p.display_name,p.boundingbox)};list.appendChild(b)});list.classList.add('on')
+ }).catch(function(){list.innerHTML='<div class="row">Suche nicht erreichbar. Prüfe deine Verbindung.</div>';list.classList.add('on')});
 }
 function show(lat,lon,name,bb){
  target=[lat,lon];requestId++;clearRoute();$('eta').classList.remove('on');
  if(mark)map.removeLayer(mark);mark=L.marker(target).addTo(map);
  var parts=name.split(', ');$('sn').textContent=parts[0];$('sd').textContent=parts.slice(1,5).join(', ');
  $('sheet').classList.add('on');$('fabs').classList.add('up');
- if(bb)map.fitBounds([[+bb[0],+bb[2]],[+bb[1],+bb[3]]],{maxZoom:17,paddingBottomRight:[0,200]});else map.setView(target,16);
+ if(bb)map.fitBounds([[+bb[0],+bb[2]],[+bb[1],+bb[3]]],{maxZoom:17,paddingBottomRight:[0,300]});else map.setView(target,16);
 }
 map.on('click',function(e){list.classList.remove('on');
  fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=de&zoom=18&lat='+e.latlng.lat+'&lon='+e.latlng.lng)
@@ -130,81 +121,62 @@ map.on('click',function(e){list.classList.remove('on');
 $('close').onclick=function(){$('sheet').classList.remove('on');$('fabs').classList.remove('up');requestId++;if(mark){map.removeLayer(mark);mark=null}clearRoute()};
 
 function locate(cb){
- map.once('locationfound',function(e){me=e.latlng;if(meMark)map.removeLayer(meMark);
-  meMark=L.circleMarker(me,{radius:8,color:'#fff',weight:3,fillColor:'#1a73e8',fillOpacity:1}).addTo(map);cb&&cb()});
- map.once('locationerror',function(){$('ed').textContent='Standort nicht verfügbar. Erlaube den Standortzugriff im Browser.';$('eta').classList.add('on');$('et').textContent=''});
+ map.once('locationfound',function(e){me=e.latlng;if(meMark)map.removeLayer(meMark);meMark=L.circleMarker(me,{radius:8,color:'#fff',weight:3,fillColor:'#1a73e8',fillOpacity:1}).addTo(map);if(cb)cb()});
+ map.once('locationerror',function(){$('eta').classList.add('on');$('et').textContent='';$('ed').textContent='Standort nicht verfügbar. Erlaube den Standortzugriff im Browser.'});
  map.locate({enableHighAccuracy:true});
 }
 $('loc').onclick=function(){locate(function(){map.setView(me,15)})};
 
 var EP={car:'https://router.project-osrm.org/route/v1/driving/',bike:'https://routing.openstreetmap.de/routed-bike/route/v1/driving/',foot:'https://routing.openstreetmap.de/routed-foot/route/v1/driving/'};
-
 function calcTransit(id){
- if(!me||!target)return;
- var params=new URLSearchParams({
-   fromPlace: me.lat + ',' + me.lng,
-   toPlace: target[0] + ',' + target[1],
-   time: new Date().toISOString(),
-   language: 'de',
-   detailedLegs: 'true',
-   detailedTransfers: 'true',
-   numItineraries: '3',
-   timetableView: 'false',
-   transitModes: 'TRANSIT'
- });
- fetch('https://api.transitous.org/api/v6/plan?' + params.toString())
-   .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-   .then(function(d){
-     if(id!==requestId)return;
-     var itineraries=(d&&d.itineraries)||[];
-     if(!itineraries.length){$('et').textContent='';$('ed').textContent='Keine ÖPNV-Verbindung gefunden.';return;}
-     var itin=itineraries[0];
-     if(route){map.removeLayer(route);route=null;}
-     route=L.layerGroup();
-     $('legs').innerHTML='';
-     (itin.legs||[]).forEach(function(leg){
-       var isTransit=leg.mode!=='WALK'&&leg.mode!=='BIKE'&&leg.mode!=='CAR';
-       var label=isTransit?(leg.displayName||leg.routeShortName||leg.mode):'Zu Fuß';
-       var from=(leg.from&&leg.from.name)||'Start';
-       var to=(leg.to&&leg.to.name)||'Ziel';
-       $('legs').innerHTML += '<div><b>' + esc(label) + '</b>: ' + esc(from) + ' → ' + esc(to) + ' · ' + formatDuration(leg.duration || 0) + '</div>';
-       if(leg.legGeometry && leg.legGeometry.points){
-         var precision=leg.legGeometry.precision||6;
-         var coords=decodePolyline(leg.legGeometry.points, precision);
-         if(coords.length>1){
-           var color=isTransit ? (leg.routeColor ? ('#'+String(leg.routeColor).replace('#','')) : '#1a73e8') : '#1a73e8';
-           var line=L.polyline(coords,{color:color,weight:isTransit?6:4,opacity:.9}).addTo(map);
-           route.addLayer(line);
-         }
-       }
-     });
-     var duration=(itin.duration||0) > 0 ? itin.duration : Math.max(0, (new Date(itin.endTime)-new Date(itin.startTime))/1000);
-     $('et').textContent=formatDuration(duration);
-     $('ed').textContent=(itin.transfers||0)+' Umstiege';
-     if(route && route.getLayers().length){map.fitBounds(route.getBounds(),{paddingTopLeft:[30,90],paddingBottomRight:[30,260]});}
-   }).catch(function(err){if(id!==requestId)return;$('et').textContent='';$('ed').textContent='ÖPNV-Routenserver nicht erreichbar. Bitte später erneut versuchen.';console.error('Transitous routing error:',err);});
-}
-
-function calc(){
- if(!me||!target)return;
- var id=++requestId;
- if(mode==='opnv'){calcTransit(id);return;}
- if(route){map.removeLayer(route);route=null;}
- fetch(EP[mode]+me.lng+','+me.lat+';'+target[1]+','+target[0]+'?overview=full&geometries=geojson')
- .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(d){
+ var params=new URLSearchParams({fromPlace:me.lat+','+me.lng,toPlace:target[0]+','+target[1],time:new Date().toISOString(),language:'de',detailedLegs:'true',detailedTransfers:'true',numItineraries:'3',timetableView:'false',transitModes:'TRANSIT'});
+ fetch('https://api.transitous.org/api/v6/plan?'+params.toString(),{headers:{Accept:'application/json'}})
+ .then(function(r){if(!r.ok)throw new Error('Transitous HTTP '+r.status);return r.json()})
+ .then(function(d){
   if(id!==requestId)return;
-  if(!d.routes||!d.routes.length){$('et').textContent='';$('ed').textContent='Keine Route gefunden.';return}
-  var r=d.routes[0];
-  if(route){map.removeLayer(route);route=null;}
-  route=L.geoJSON(r.geometry,{style:{color:'#1a73e8',weight:6,opacity:.9}}).addTo(map);
-  map.fitBounds(route.getBounds(),{paddingTopLeft:[30,90],paddingBottomRight:[30,260]});
-  $('et').textContent=formatDuration(r.duration);
-  $('ed').textContent=r.distance>=1000?(r.distance/1000).toFixed(1).replace('.',',')+' km':Math.round(r.distance)+' m';
- }).catch(function(err){if(id!==requestId)return;$('et').textContent='';$('ed').textContent='Routenserver nicht erreichbar.';console.error('Routing error:',err)});
+  var itin=d&&d.itineraries&&d.itineraries[0];
+  if(!itin){clearRoute();$('et').textContent='';$('ed').textContent='Keine ÖPNV-Verbindung für diese Strecke oder Uhrzeit gefunden.';return}
+  clearRoute();var newRoute=L.layerGroup(),legRows=[];
+  (itin.legs||[]).forEach(function(leg){
+   var isTransit=!['WALK','BIKE','CAR'].includes(leg.mode),label=isTransit?(leg.displayName||leg.routeShortName||leg.mode):'Zu Fuß';
+   var from=leg.from&&leg.from.name||'Start',to=leg.to&&leg.to.name||'Ziel';
+   legRows.push('<div><b>'+esc(label)+'</b>: '+esc(from)+' → '+esc(to)+' · '+formatDuration(leg.duration)+'</div>');
+   var points=leg.legGeometry&&leg.legGeometry.points;
+   if(points){var coords=decodePolyline(points,leg.legGeometry.precision||6);
+    if(coords.length>1){var raw=String(leg.routeColor||'').replace('#','');var color=/^[0-9a-f]{6}$/i.test(raw)?'#'+raw:'#1a73e8';newRoute.addLayer(L.polyline(coords,{color:isTransit?color:'#1a73e8',weight:isTransit?6:4,opacity:.9,dashArray:isTransit?null:'6 6'}))}
+   }
+  });
+  if(id!==requestId)return;
+  if(newRoute.getLayers().length)newRoute.addTo(map);route=newRoute;
+  $('legs').innerHTML=legRows.join('');
+  var secs=Number(itin.duration)||Math.max(0,(Date.parse(itin.endTime)-Date.parse(itin.startTime))/1000);
+  $('et').textContent=formatDuration(secs);$('ed').textContent=(itin.transfers||0)+' Umstiege';
+  if(newRoute.getLayers().length)map.fitBounds(newRoute.getBounds(),{paddingTopLeft:[30,90],paddingBottomRight:[30,300]});
+ }).catch(function(err){
+  if(id!==requestId)return;clearRoute();$('et').textContent='';
+  $('ed').textContent='ÖPNV-Verbindung konnte nicht geladen werden. Prüfe die Verbindung oder versuche es später erneut.';
+  console.error('Transitous routing error:',err);
+ });
 }
-$('go').onclick=function(){$('eta').classList.add('on');$('et').textContent='…';$('ed').textContent='';$('legs').innerHTML='';if(me)calc();else locate(calc)};
+function calc(){
+ if(!me||!target)return;var id=++requestId;clearRoute();$('eta').classList.add('on');$('et').textContent='Route wird gesucht …';$('ed').textContent='';
+ if(mode==='opnv'){calcTransit(id);return}
+ fetch(EP[mode]+me.lng+','+me.lat+';'+target[1]+','+target[0]+'?overview=full&geometries=geojson')
+ .then(function(r){if(!r.ok)throw new Error('Routing HTTP '+r.status);return r.json()}).then(function(d){
+  if(id!==requestId)return;if(!d.routes||!d.routes.length){$('et').textContent='';$('ed').textContent='Keine Route gefunden.';return}
+  var r=d.routes[0];route=L.geoJSON(r.geometry,{style:{color:'#1a73e8',weight:6,opacity:.9}}).addTo(map);
+  map.fitBounds(route.getBounds(),{paddingTopLeft:[30,90],paddingBottomRight:[30,300]});$('et').textContent=formatDuration(r.duration);
+  $('ed').textContent=r.distance>=1000?(r.distance/1000).toFixed(1).replace('.',',')+' km':Math.round(r.distance)+' m';
+ }).catch(function(err){if(id!==requestId)return;$('et').textContent='';$('ed').textContent='Routenserver nicht erreichbar. Prüfe die Verbindung oder versuche es später erneut.';console.error('Routing error:',err)});
+}
+$('go').onclick=function(){
+ $('eta').classList.add('on');$('et').textContent='Standort wird ermittelt …';$('ed').textContent='';clearRoute();
+ if(me)calc();else locate(calc);
+};
 document.querySelectorAll('[data-m]').forEach(function(b){b.onclick=function(){mode=b.dataset.m;
- document.querySelectorAll('[data-m]').forEach(function(o){o.setAttribute('aria-pressed',o===b)});if(me&&target){$('et').textContent='…';$('ed').textContent='';calc()}}});
+ document.querySelectorAll('[data-m]').forEach(function(o){o.setAttribute('aria-pressed',o===b)});
+ // Verkehrsmittel wählen startet keine Anfrage. Erst „Route starten“ ruft den Router auf.
+}});
 </script>
 </body>
 </html>
