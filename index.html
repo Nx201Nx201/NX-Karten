@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Karte</title>
+<title>NX-Karten</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 <style>
 :root{--ui:#fff;--ui2:#f1f3f4;--tx:#202124;--tx2:#5f6368;--ac:#1a73e8;--sh:0 2px 10px rgba(0,0,0,.28)}
@@ -40,7 +40,7 @@ html,body{height:100%;margin:0;color:var(--tx);font:15px/1.4 system-ui,-apple-sy
 <body>
 <div id="map"></div>
 <div class="top">
-  <div class="bar"><span aria-hidden="true">🔍</span><input id="q" type="search" placeholder="Ort oder Adresse suchen" autocomplete="off" aria-label="Suche"></div>
+  <div class="bar"><span aria-hidden="true">Suchen</span><input id="q" type="search" placeholder="Ort oder Adresse suchen" autocomplete="off" aria-label="Suche"></div>
   <div class="list" id="list"></div>
 </div>
 <div class="fabs" id="fabs">
@@ -53,9 +53,10 @@ html,body{height:100%;margin:0;color:var(--tx);font:15px/1.4 system-ui,-apple-sy
   <div class="acts"><button class="btn p" id="go">Route von meinem Standort</button></div>
   <div class="eta" id="eta">
     <div class="acts" style="margin-bottom:8px">
-      <button class="btn" data-m="car" aria-pressed="true">🚗 Auto</button>
-      <button class="btn" data-m="bike" aria-pressed="false">🚲 Rad</button>
-      <button class="btn" data-m="foot" aria-pressed="false">🚶 Zu Fuß</button>
+      <button class="btn" data-m="car" aria-pressed="true">Auto</button>
+      <button class="btn" data-m="bike" aria-pressed="false">Rad</button>
+      <button class="btn" data-m="foot" aria-pressed="false">Zu Fuß</button>
+      <button class="btn" data-m="opnv" aria-pressed="false">ÖPNV (Unter Entwicklung)</button>
     </div>
     <b id="et"></b> <span id="ed" style="color:var(--tx2)"></span>
   </div>
