@@ -144,7 +144,7 @@ function decode(s,p){let i=0,lat=0,lng=0,o=[],f=Math.pow(10,p);while(i<s.length)
 function track(){if(watchId!==null||!navigator.geolocation)return;
  watchId=navigator.geolocation.watchPosition(showUser,()=>{},{enableHighAccuracy:true,maximumAge:5000});$('stop').hidden=false}
 function stopTrack(){if(watchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(watchId);watchId=null;$('stop').hidden=true;endNavUI()}
-$('start').onclick=startRoute;
+$('start').onclick=()=>{unlockVoice();startRoute()};
 $('stop').onclick=endRoute;
 $('close').onclick=e=>{e.preventDefault();stopTrack();$('sheet').classList.remove('open');$('routeOutput').classList.remove('open');clearRoute();$('options').innerHTML='';if(marker){map.removeLayer(marker);marker=null}place=null};
 
@@ -191,7 +191,17 @@ function project(p,r){const kx=111320*Math.cos(p.lat*Math.PI/180),ky=110540;let 
   let t=l2?-(ax*dx+ay*dy)/l2:0;t=Math.max(0,Math.min(1,t));const d=Math.hypot(ax+t*dx,ay+t*dy);
   if(d<bd){bd=d;bp=r.cum[i]+t*(r.cum[i+1]-r.cum[i])}}
  return{dist:bd,prog:bp}}
-function say(t){if(!voiceOn||!window.speechSynthesis)return;const u=new SpeechSynthesisUtterance(t);u.lang='de-DE';speechSynthesis.cancel();speechSynthesis.speak(u)}
+let unlocked=false,voice=null;
+function pickVoice(){if(!window.speechSynthesis)return;const v=speechSynthesis.getVoices();voice=v.find(x=>x.lang==='de-DE')||v.find(x=>x.lang&&x.lang.indexOf('de')===0)||null}
+if(window.speechSynthesis){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
+// iOS erlaubt Sprache erst, nachdem sie einmal direkt per Fingertipp gestartet wurde
+function unlockVoice(always){if(!window.speechSynthesis||!voiceOn||(unlocked&&!always))return;
+ const u=new SpeechSynthesisUtterance(unlocked?'Sprachführung an':'Sprachführung ist aktiv');u.lang='de-DE';if(voice)u.voice=voice;
+ speechSynthesis.resume();speechSynthesis.speak(u);unlocked=true}
+function say(t){if(!voiceOn||!window.speechSynthesis||!unlocked)return;
+ const busy=speechSynthesis.speaking||speechSynthesis.pending;if(busy)speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(t);u.lang='de-DE';if(voice)u.voice=voice;
+ setTimeout(()=>{speechSynthesis.resume();speechSynthesis.speak(u)},busy?150:0)}
 function drawNavRoute(rt){if(routeLayer)map.removeLayer(routeLayer);routeLayer=L.geoJSON(rt.geometry,{style:{color:'#1a73e8',weight:7}}).addTo(map)}
 function beginNav(rt,end){stopTrack();if(!navigator.geolocation)return;
  NAV={r:prep(rt),end:{lat:end.lat,lng:end.lng},rt:rt};follow=true;spoken={};
@@ -220,7 +230,7 @@ function endNavUI(){NAV=null;TN=null;document.body.classList.remove('navigating'
 map.on('dragstart',()=>{if(NAV||TN)follow=false});
 $('navEnd').onclick=endRoute;
 function endRoute(){stopTrack();clearRoute();$('options').innerHTML='';$('routeOutput').classList.remove('open');msg('')}
-$('navVoice').onclick=()=>{voiceOn=!voiceOn;$('navVoice').textContent=voiceOn?'🔊':'🔇';if(!voiceOn&&window.speechSynthesis)speechSynthesis.cancel()};
+$('navVoice').onclick=()=>{voiceOn=!voiceOn;$('navVoice').textContent=voiceOn?'🔊':'🔇';if(voiceOn)unlockVoice(true);if(!voiceOn&&window.speechSynthesis)speechSynthesis.cancel()};
 
 // ===== ÖPNV-Navigation (live, nach Klick auf "Navigation starten") =====
 let TN=null,curJ=null,TLINES=[];
@@ -268,5 +278,5 @@ function tnUpdate(pos){
  if(TN.shown!==i){TN.shown=i;TLINES.forEach((ln,k)=>ln&&ln.setStyle(k===i?{weight:10,opacity:1}:{weight:6,opacity:.35}));say(txt)}
  const secs=Math.max(0,(new Date(TN.j.endTime)-Date.now())/1000);
  $('navEta').textContent=clock(TN.j.endTime)+' Uhr';$('navRest').textContent=' · noch '+fmt(secs)+(nxt?' · danach '+legName(nxt.l):'')}
-$('tgo').onclick=()=>beginTransitNav(curJ);
+$('tgo').onclick=()=>{unlockVoice();beginTransitNav(curJ)};
 </script></body></html>
