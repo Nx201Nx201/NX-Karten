@@ -14,7 +14,7 @@ input,textarea,select{font-size:16px!important}.btn,.tab{min-height:40px}.grab{d
 </style></head><body>
 <div id="map"></div><div class="top"><div class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Ort oder Adresse suchen" aria-label="Ort oder Adresse suchen" autocomplete="off"></div><div class="results" id="results"></div></div><div class="brand">NX</div><div class="floats"><button class="float" id="sat" title="Satellitenkarte">🛰</button><button class="float" id="loc" title="Mein Standort">◎</button></div>
 <section class="sheet" id="sheet" aria-live="polite"><button class="grab" id="grab" type="button" aria-label="Fenster ein- oder ausklappen"></button><div class="head"><h2 id="placeName">Ort</h2><button class="close" id="close" type="button" aria-label="Schließen">×</button></div><div id="placeAddress" class="sub"></div><div class="tabs"><button class="tab active" data-panel="routePanel">Route</button><button class="tab" data-panel="reviewsPanel">Rezensionen</button><button class="tab" data-panel="infoPanel">Info</button></div>
-<div class="panel active" id="routePanel"><label class="row"><input type="radio" name="origin" value="device" checked> Mein Gerätestandort</label><label class="row"><input type="radio" name="origin" value="address"> Startadresse eingeben</label><label class="field" id="fromWrap" hidden><span>Startadresse</span><input id="from" placeholder="Straße, Ort"></label><label class="field"><span>Zieladresse</span><input id="to" placeholder="Adresse oder Ort"></label><div class="buttons"><button class="btn selected" data-mode="car">Auto</button><button class="btn" data-mode="bike">Rad</button><button class="btn" data-mode="foot">Zu Fuß</button><button class="btn" data-mode="transit">ÖPNV</button></div><button class="btn primary" id="start">Route starten</button> <button class="btn" id="stop" hidden>Route beenden</button><div class="output" id="routeOutput"><strong id="duration"></strong> <span id="distance"></span><div class="status" id="status"></div><div class="options" id="options"></div><div id="legs"></div></div></div>
+<div class="panel active" id="routePanel"><label class="row"><input type="radio" name="origin" value="device" checked> Mein Gerätestandort</label><label class="row"><input type="radio" name="origin" value="address"> Startadresse eingeben</label><label class="field" id="fromWrap" hidden><span>Startadresse</span><input id="from" placeholder="Straße, Ort"></label><label class="field"><span>Zieladresse</span><input id="to" placeholder="Adresse oder Ort"></label><div class="buttons"><button class="btn selected" data-mode="car">Auto</button><button class="btn" data-mode="bike">Rad</button><button class="btn" data-mode="foot">Zu Fuß</button><button class="btn" data-mode="transit">ÖPNV</button></div><button class="btn primary" id="start">Route starten</button> <button class="btn" id="stop" hidden>Route beenden</button><div class="output" id="routeOutput"><strong id="duration"></strong> <span id="distance"></span><div class="status" id="status"></div><div class="options" id="options"></div><button class="btn primary" id="tgo" type="button" hidden style="margin:6px 0 8px">Navigation starten</button><div id="legs"></div></div></div>
 <div class="panel" id="reviewsPanel"><div id="reviewSummary" class="review-summary"></div><div id="reviews"></div><h3>Rezension schreiben</h3><form id="reviewForm"><label class="field"><span>Name (optional)</span><input id="reviewer" maxlength="50" placeholder="Anonym"></label><label class="field"><span>Sterne</span><select id="rating"><option value="5">★★★★★ – Sehr gut</option><option value="4">★★★★☆ – Gut</option><option value="3">★★★☆☆ – In Ordnung</option><option value="2">★★☆☆☆ – Nicht gut</option><option value="1">★☆☆☆☆ – Schlecht</option></select></label><label class="field"><span>Deine Rezension</span><textarea id="reviewText" maxlength="1000" required></textarea></label><button class="btn primary">Speichern</button></form><p class="muted">Nur lokal in diesem Browser gespeichert.</p></div><div class="panel" id="infoPanel"><p id="info"></p></div></section>
 <div id="navTop" hidden><div id="navIcon">↑</div><div><b id="navDist"></b><div id="navText"></div></div></div>
 <div id="navBot" hidden><div><b id="navEta"></b><span id="navRest" class="muted"></span></div><button class="btn" id="navVoice" aria-label="Sprachansage">🔊</button><button class="btn primary" id="navEnd">Beenden</button></div>
@@ -36,7 +36,7 @@ const satellite=L.layerGroup([L.tileLayer('https://server.arcgisonline.com/ArcGI
 let sat=false,place=null,placeKey='',marker=null,userLoc=null,userMarker=null,routeLayer=null,mode='car',watchId=null;
 $('sat').onclick=()=>{sat=!sat;if(sat){map.removeLayer(osm);satellite.addTo(map)}else{map.removeLayer(satellite);osm.addTo(map)}};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- 
+
 function setPlace(lat,lon,name,bounds){
  place={lat,lng:lon,name};placeKey=lat.toFixed(4)+','+lon.toFixed(4);
  if(marker)map.removeLayer(marker);marker=L.marker([lat,lon]).addTo(map);
@@ -60,12 +60,12 @@ let timer;
 $('search').addEventListener('input',()=>{clearTimeout(timer);const v=$('search').value.trim();if(v.length<2){$('results').classList.remove('open');return}
  timer=setTimeout(()=>geocode(v,true).catch(()=>{$('results').innerHTML='<div class="result">Suche nicht erreichbar</div>';$('results').classList.add('open')}),450)});
 $('search').addEventListener('keydown',e=>{if(e.key==='Enter')$('results').querySelector('button')?.click()});
-map.on('click',e=>{if(NAV)return;fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=de&lat='+e.latlng.lat+'&lon='+e.latlng.lng).then(r=>r.json()).then(p=>setPlace(e.latlng.lat,e.latlng.lng,p.display_name||'Kartenauswahl')).catch(()=>setPlace(e.latlng.lat,e.latlng.lng,'Kartenauswahl'))});
- 
+map.on('click',e=>{if(NAV||TN)return;fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=de&lat='+e.latlng.lat+'&lon='+e.latlng.lng).then(r=>r.json()).then(p=>setPlace(e.latlng.lat,e.latlng.lng,p.display_name||'Kartenauswahl')).catch(()=>setPlace(e.latlng.lat,e.latlng.lng,'Kartenauswahl'))});
+
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t===b));document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===b.dataset.panel))});
 document.querySelectorAll('[name="origin"]').forEach(r=>r.onchange=()=>{$('fromWrap').hidden=document.querySelector('[name="origin"]:checked').value!=='address'});
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('selected',x===b))});
- 
+
 function showUser(p){userLoc={lat:p.coords.latitude,lng:p.coords.longitude};
  if(userMarker)userMarker.setLatLng([userLoc.lat,userLoc.lng]);else userMarker=L.circleMarker([userLoc.lat,userLoc.lng],{radius:8,color:'#fff',weight:3,fillColor:'#1a73e8',fillOpacity:1}).addTo(map)}
 function locate(){return new Promise((resolve,reject)=>{
@@ -75,14 +75,14 @@ function locate(){return new Promise((resolve,reject)=>{
   const msg=e.code===1?'Standortberechtigung verweigert. Erlaube den Zugriff für diese Website in den Browser-Einstellungen.':e.code===2?'Gerätestandort nicht verfügbar. Aktiviere GPS/Standortdienste.':'Standortsuche abgelaufen. Bitte erneut versuchen.';
   reject(Error(msg))},{enableHighAccuracy:true,timeout:30000,maximumAge:15000})})}
 $('loc').onclick=()=>(follow=true,locate()).then(l=>map.setView([l.lat,l.lng],15)).catch(e=>alert(e.message));
- 
-function clearRoute(){if(routeLayer){map.removeLayer(routeLayer);routeLayer=null}$('legs').innerHTML=''}
+
+function clearRoute(){if(routeLayer){map.removeLayer(routeLayer);routeLayer=null}$('legs').innerHTML='';$('tgo').hidden=true}
 const fmt=s=>{let m=Math.max(1,Math.round((+s||0)/60));return m<60?m+' Min.':Math.floor(m/60)+' Std. '+m%60+' Min.'};
 const clock=t=>new Date(t).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
 const profiles={car:'https://router.project-osrm.org/route/v1/driving/',bike:'https://routing.openstreetmap.de/routed-bike/route/v1/driving/',foot:'https://routing.openstreetmap.de/routed-foot/route/v1/driving/'};
 const MODES={WALK:'Zu Fuß',BIKE:'Rad',CAR:'Auto',BUS:'Bus',TRAM:'Straßenbahn',SUBWAY:'U-Bahn',RAIL:'Bahn',REGIONAL_RAIL:'Regionalbahn',REGIONAL_FAST_RAIL:'Regionalexpress',HIGHSPEED_RAIL:'ICE',LONG_DISTANCE:'Fernverkehr',NIGHT_RAIL:'Nachtzug',FERRY:'Fähre',SUBURBAN:'S-Bahn'};
 function msg(t,err){$('status').textContent=t;$('status').classList.toggle('error',!!err)}
- 
+
 async function startRoute(){
  clearRoute();$('options').innerHTML='';$('routeOutput').classList.add('open');
  $('duration').textContent='Route wird gesucht …';$('distance').textContent='';msg('');
@@ -99,7 +99,7 @@ async function startRoute(){
    d.itineraries.forEach((j,i)=>{const b=document.createElement('button');b.className='option'+(i?'':' active');
     b.innerHTML='<b>'+clock(j.startTime)+' → '+clock(j.endTime)+'</b><small>'+fmt(j.duration)+' · '+(j.transfers||0)+' Umstiege</small>';
     b.onclick=()=>{document.querySelectorAll('.option').forEach(o=>o.classList.toggle('active',o===b));drawTransit(j)};$('options').appendChild(b)});
-   drawTransit(d.itineraries[0]);track();return}
+   drawTransit(d.itineraries[0]);return}
   const r=await fetch(profiles[mode]+start.lng+','+start.lat+';'+end.lng+','+end.lat+'?overview=full&geometries=geojson&steps=true');
   if(!r.ok)throw Error('Routenserver antwortet mit Fehler '+r.status);
   const d=await r.json();
@@ -135,10 +135,11 @@ function drawTransit(j){
   d.onclick=()=>sel(i);$('legs').appendChild(d);$('legs').appendChild(det);items.push({d,det,line,w});
  });
  if(routeLayer.getLayers().length)fit(routeLayer);
+ curJ=j;TLINES=items.map(i=>i.line);$('tgo').hidden=false;$('stop').hidden=false;
  $('duration').textContent=fmt(j.duration);$('distance').textContent=' · '+(j.transfers||0)+' Umstiege · '+clock(j.startTime)+'–'+clock(j.endTime);
 }
 function decode(s,p){let i=0,lat=0,lng=0,o=[],f=Math.pow(10,p);while(i<s.length){let b,sh=0,r=0;do{b=s.charCodeAt(i++)-63;r|=(b&31)<<sh;sh+=5}while(b>=32);lat+=(r&1)?~(r>>1):(r>>1);sh=0;r=0;do{b=s.charCodeAt(i++)-63;r|=(b&31)<<sh;sh+=5}while(b>=32);lng+=(r&1)?~(r>>1):(r>>1);o.push([lat/f,lng/f])}return o}
- 
+
 // Live-Standort während der Navigation
 function track(){if(watchId!==null||!navigator.geolocation)return;
  watchId=navigator.geolocation.watchPosition(showUser,()=>{},{enableHighAccuracy:true,maximumAge:5000});$('stop').hidden=false}
@@ -146,7 +147,7 @@ function stopTrack(){if(watchId!==null&&navigator.geolocation)navigator.geolocat
 $('start').onclick=startRoute;
 $('stop').onclick=endRoute;
 $('close').onclick=e=>{e.preventDefault();stopTrack();$('sheet').classList.remove('open');$('routeOutput').classList.remove('open');clearRoute();$('options').innerHTML='';if(marker){map.removeLayer(marker);marker=null}place=null};
- 
+
 // Rezensionen (lokal)
 function readReviews(){try{return JSON.parse(localStorage.getItem(STORE)||'{}')}catch(e){return{}}}
 function renderReviews(){const list=readReviews()[placeKey]||[];
@@ -158,7 +159,7 @@ $('reviewForm').onsubmit=e=>{e.preventDefault();const all=readReviews();
  (all[placeKey]||(all[placeKey]=[])).push({name:$('reviewer').value.trim(),rating:+$('rating').value,text:$('reviewText').value.trim(),date:new Date().toISOString()});
  try{localStorage.setItem(STORE,JSON.stringify(all))}catch(x){}
  $('reviewText').value='';renderReviews()};
- 
+
 // ===== Handy-Anzeige =====
 function padB(){const s=$('sheet');return s.classList.contains('open')?Math.min(innerHeight*.6,s.offsetHeight)+24:40}
 $('grab').onclick=()=>$('sheet').classList.toggle('min');
@@ -214,11 +215,58 @@ function navUpdate(pos){showUser(pos);if(!NAV)return;const p=userLoc;
 function reroute(p){$('navText').textContent='Route wird neu berechnet …';
  fetch(profiles[mode]+p.lng+','+p.lat+';'+NAV.end.lng+','+NAV.end.lat+'?overview=full&geometries=geojson&steps=true').then(r=>r.json()).then(d=>{
   if(!NAV||!d.routes||!d.routes.length)return;NAV.rt=d.routes[0];NAV.r=prep(d.routes[0]);spoken={};drawNavRoute(d.routes[0]);say('Route neu berechnet')}).catch(()=>{})}
-function endNavUI(){NAV=null;document.body.classList.remove('navigating');$('navTop').hidden=true;$('navBot').hidden=true;if(lock){lock.release().catch(()=>{});lock=null}
+function endNavUI(){NAV=null;TN=null;document.body.classList.remove('navigating');$('navTop').hidden=true;$('navBot').hidden=true;if(lock){lock.release().catch(()=>{});lock=null}
  if(window.speechSynthesis)speechSynthesis.cancel();if(place)$('sheet').classList.add('open')}
-map.on('dragstart',()=>{if(NAV)follow=false});
+map.on('dragstart',()=>{if(NAV||TN)follow=false});
 $('navEnd').onclick=endRoute;
 function endRoute(){stopTrack();clearRoute();$('options').innerHTML='';$('routeOutput').classList.remove('open');msg('')}
 $('navVoice').onclick=()=>{voiceOn=!voiceOn;$('navVoice').textContent=voiceOn?'🔊':'🔇';if(!voiceOn&&window.speechSynthesis)speechSynthesis.cancel()};
+
+// ===== ÖPNV-Navigation (live, nach Klick auf "Navigation starten") =====
+let TN=null,curJ=null,TLINES=[];
+const legName=l=>l.mode==='WALK'?'Zu Fuß':((MODES[l.mode]||'')+' '+(l.routeShortName||l.displayName||'')).trim();
+const nmOf=(x,d)=>x&&x.name&&x.name!=='END'&&x.name!=='START'?x.name:d;
+const ICON={WALK:'🚶',BUS:'🚌',TRAM:'🚋',SUBWAY:'🚇',FERRY:'⛴'};
+function beginTransitNav(j){
+ stopTrack();if(!navigator.geolocation||!j)return;
+ const legs=(j.legs||[]).map(l=>{
+  const pts=l.legGeometry&&l.legGeometry.points?decode(l.legGeometry.points,l.legGeometry.precision||6):[],cum=[0];
+  for(let k=1;k<pts.length;k++)cum.push(cum[k-1]+L.latLng(pts[k-1]).distanceTo(L.latLng(pts[k])));
+  const r={c:pts,cum,total:cum[cum.length-1]||1},ok=pts.length>1;
+  const stops=ok?(l.intermediateStops||[]).filter(x=>x.lat!=null).map(x=>({name:x.name,prog:project({lat:x.lat,lng:x.lon},r).prog})):[];
+  return{l,r,ok,stops,walk:l.mode==='WALK'}});
+ if(!legs.length)return;
+ TN={j,legs,idx:0,boarded:false,shown:-1};follow=true;spoken={};
+ document.body.classList.add('navigating');$('navTop').hidden=false;$('navBot').hidden=false;$('sheet').classList.remove('open');
+ $('navIcon').textContent='🚶';$('navText').textContent='Standort wird ermittelt …';$('navDist').textContent='';
+ if(navigator.wakeLock)navigator.wakeLock.request('screen').then(x=>lock=x).catch(()=>{});
+ watchId=navigator.geolocation.watchPosition(tnUpdate,()=>{$('navText').textContent='GPS-Signal fehlt …'},{enableHighAccuracy:true,maximumAge:1000,timeout:20000})}
+function tnUpdate(pos){
+ showUser(pos);if(!TN)return;const p=userLoc,ll=L.latLng(p.lat,p.lng),legs=TN.legs;
+ if(follow)map.setView([p.lat,p.lng],Math.max(map.getZoom(),16),{animate:true});
+ let g=legs[TN.idx];const dTo=x=>x&&x.lat!=null?ll.distanceTo(L.latLng(x.lat,x.lon)):1e9;
+ if(dTo(g.l.to)<(g.walk?25:45)){
+  if(TN.idx===legs.length-1){$('navIcon').textContent='⚑';$('navDist').textContent='';$('navText').textContent='Du hast dein Ziel erreicht';say('Du hast dein Ziel erreicht');
+   if(watchId!==null)navigator.geolocation.clearWatch(watchId);watchId=null;return}
+  TN.idx++;TN.boarded=false;g=legs[TN.idx]}
+ const i=TN.idx,nxt=legs[i+1],l=g.l,to=nmOf(l.to,'Ziel'),from=nmOf(l.from,'Start');
+ let icon=ICON[l.mode]||'🚆',dist,txt;
+ if(g.walk){const pr=g.ok?project(p,g.r):null,rem=pr&&pr.dist<80?g.r.total-pr.prog:dTo(l.to);
+  icon='🚶';dist=fd(rem);txt='Gehe zu '+to+(nxt?' · weiter mit '+legName(nxt.l)+' um '+clock(nxt.l.startTime):'')}
+ else{
+  const pr=g.ok?project(p,g.r):{dist:1e9,prog:0},fromD=dTo(l.from);
+  if(!TN.boarded&&pr.dist<40&&pr.prog>60)TN.boarded=true;
+  if(TN.boarded){const left=g.stops.filter(s=>s.prog>pr.prog+30).length+1;
+   dist='noch '+left+(left===1?' Halt':' Halte');txt='Fahre mit '+legName(l)+' bis '+to+(left===1?' · jetzt aussteigen':'');
+   if(left===1&&!spoken['o'+i]){spoken['o'+i]=1;say('Nächster Halt: '+to+'. Bitte aussteigen.')}}
+  else if(fromD>60){icon='🚶';dist=fd(fromD);txt='Gehe zu Haltestelle '+from+' · '+legName(l)+' um '+clock(l.startTime)}
+  else{const mins=Math.round((new Date(l.startTime)-Date.now())/60000),late=l.scheduledStartTime?Math.round((new Date(l.startTime)-new Date(l.scheduledStartTime))/60000):0;
+   dist=mins>0?'in '+mins+' Min.':'jetzt';
+   txt='Warte auf '+legName(l)+(l.headsign?' Richtung '+l.headsign:'')+' · '+clock(l.startTime)+(late>0?' (+'+late+' Min. Verspätung)':'')+(l.realTime?' · Echtzeit':'')}
+ }
+ $('navIcon').textContent=icon;$('navDist').textContent=dist;$('navText').textContent=txt;
+ if(TN.shown!==i){TN.shown=i;TLINES.forEach((ln,k)=>ln&&ln.setStyle(k===i?{weight:10,opacity:1}:{weight:6,opacity:.35}));say(txt)}
+ const secs=Math.max(0,(new Date(TN.j.endTime)-Date.now())/1000);
+ $('navEta').textContent=clock(TN.j.endTime)+' Uhr';$('navRest').textContent=' · noch '+fmt(secs)+(nxt?' · danach '+legName(nxt.l):'')}
+$('tgo').onclick=()=>beginTransitNav(curJ);
 </script></body></html>
- 
