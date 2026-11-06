@@ -1,11 +1,14 @@
 <!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>NX-Karten</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"><style>
 :root{--ui:#fff;--soft:#f1f3f4;--tx:#202124;--muted:#667085;--blue:#1a73e8;--line:#e4e7ec;--shadow:0 6px 22px #0002}*{box-sizing:border-box}html,body{height:100%;margin:0;font:15px/1.4 system-ui,sans-serif;color:var(--tx)}#map{position:fixed;inset:0;background:#dfe8ee}#warn{position:fixed;z-index:3000;left:50%;top:76px;transform:translateX(-50%);max-width:90vw;padding:10px 14px;border-radius:12px;background:#b42318;color:#fff;font-size:14px;box-shadow:var(--shadow)}.top{position:fixed;z-index:1000;top:14px;left:14px;right:82px;max-width:460px}.search{height:48px;display:flex;align-items:center;gap:10px;padding:0 15px;border-radius:26px;background:var(--ui);box-shadow:var(--shadow)}.search input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--tx);font:inherit}.brand{position:fixed;z-index:1001;right:14px;top:14px;padding:10px 14px;border-radius:18px;background:var(--ui);box-shadow:var(--shadow);font-size:20px;font-weight:850;letter-spacing:.08em;color:var(--blue)}.results{display:none;margin-top:8px;max-height:42vh;overflow:auto;background:var(--ui);border-radius:16px;box-shadow:var(--shadow)}.results.open{display:block}.result{display:block;width:100%;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--tx);padding:11px 14px;text-align:left;font:inherit;cursor:pointer}.result small{display:block;color:var(--muted);margin-top:3px}.floats{position:fixed;right:14px;bottom:18px;z-index:1000;display:grid;gap:9px}.float{width:44px;height:44px;border:0;border-radius:50%;background:var(--ui);box-shadow:var(--shadow);font-size:19px;cursor:pointer}.sheet{display:none;position:fixed;z-index:1100;left:50%;bottom:12px;transform:translateX(-50%);width:min(560px,calc(100vw - 20px));max-height:82vh;overflow:auto;padding:17px;background:var(--ui);border-radius:22px;box-shadow:var(--shadow)}.sheet.open{display:block}.head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.head h2{margin:0;font-size:20px}.sub{color:var(--muted);font-size:13px;margin:3px 0 12px}.close{position:relative;z-index:5;border:0;background:transparent;color:var(--muted);font-size:25px;line-height:1;cursor:pointer;padding:4px 8px}.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:7px 0 13px}.tab{border:0;border-bottom:2px solid transparent;background:transparent;color:var(--muted);padding:9px 12px;font:inherit;cursor:pointer}.tab.active{border-color:var(--blue);color:var(--blue);font-weight:700}.panel{display:none}.panel.active{display:block}.field{display:block;margin:10px 0}.field span{display:block;margin-bottom:4px;color:var(--muted);font-size:13px}.field input,.field textarea,.field select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--ui);color:var(--tx);font:inherit}.field textarea{min-height:75px;resize:vertical}.row{display:flex;align-items:center;gap:9px;margin:8px 0}.buttons{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}.btn{border:1px solid var(--line);border-radius:999px;background:var(--soft);color:var(--tx);padding:9px 13px;font:inherit;cursor:pointer}.btn.primary,.btn.selected{background:var(--blue);border-color:var(--blue);color:#fff}.status{color:var(--muted);font-size:13px;margin:8px 0}.status.error{color:#b42318}.output{display:none;border-top:1px solid var(--line);padding-top:12px;margin-top:12px}.output.open{display:block}.output strong{font-size:20px}.options{display:flex;gap:8px;overflow:auto;margin:8px 0}.option{flex:none;min-width:145px;border:1px solid var(--line);border-radius:12px;background:var(--soft);padding:9px;text-align:left;color:var(--tx);cursor:pointer;font:inherit}.option.active{border-color:var(--blue);outline:1px solid var(--blue)}.option small{display:block;color:var(--muted)}.leg{padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}.review-summary{padding:10px;border-radius:12px;background:var(--soft);margin-bottom:10px}.review{border-bottom:1px solid var(--line);padding:10px 0}.muted{color:var(--muted);font-size:12px}[hidden]{display:none!important}@media(prefers-color-scheme:dark){:root{--ui:#292b2e;--soft:#383a3e;--tx:#eceff1;--muted:#abb0b8;--line:#4a4d52;--blue:#8ab4f8;--shadow:0 8px 26px #0008}}
+#navTop{position:fixed;z-index:1200;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 12px);max-width:560px;margin:0 auto;display:flex;gap:14px;align-items:center;padding:14px 16px;border-radius:18px;background:#0b57d0;color:#fff;box-shadow:var(--shadow)}#navIcon{font-size:42px;line-height:1;min-width:48px;text-align:center}#navDist{font-size:26px}#navText{font-size:16px}#navBot{position:fixed;z-index:1200;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);max-width:560px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:20px;background:var(--ui);box-shadow:var(--shadow)}#navBot>div{flex:1}#navEta{font-size:22px}.navigating .top,.navigating .brand{display:none}.navigating .floats{bottom:96px}
 </style></head><body>
 <div id="map"></div><div class="top"><div class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Ort oder Adresse suchen" aria-label="Ort oder Adresse suchen" autocomplete="off"></div><div class="results" id="results"></div></div><div class="brand">NX</div><div class="floats"><button class="float" id="sat" title="Satellitenkarte">🛰</button><button class="float" id="loc" title="Mein Standort">◎</button></div>
 <section class="sheet" id="sheet" aria-live="polite"><div class="head"><h2 id="placeName">Ort</h2><button class="close" id="close" type="button" aria-label="Schließen">×</button></div><div id="placeAddress" class="sub"></div><div class="tabs"><button class="tab active" data-panel="routePanel">Route</button><button class="tab" data-panel="reviewsPanel">Rezensionen</button><button class="tab" data-panel="infoPanel">Info</button></div>
 <div class="panel active" id="routePanel"><label class="row"><input type="radio" name="origin" value="device" checked> Mein Gerätestandort</label><label class="row"><input type="radio" name="origin" value="address"> Startadresse eingeben</label><label class="field" id="fromWrap" hidden><span>Startadresse</span><input id="from" placeholder="Straße, Ort"></label><label class="field"><span>Zieladresse</span><input id="to" placeholder="Adresse oder Ort"></label><div class="buttons"><button class="btn selected" data-mode="car">Auto</button><button class="btn" data-mode="bike">Rad</button><button class="btn" data-mode="foot">Zu Fuß</button><button class="btn" data-mode="transit">ÖPNV</button></div><button class="btn primary" id="start">Route starten</button> <button class="btn" id="stop" hidden>Navigation beenden</button><div class="output" id="routeOutput"><strong id="duration"></strong> <span id="distance"></span><div class="status" id="status"></div><div class="options" id="options"></div><div id="legs"></div></div></div>
 <div class="panel" id="reviewsPanel"><div id="reviewSummary" class="review-summary"></div><div id="reviews"></div><h3>Rezension schreiben</h3><form id="reviewForm"><label class="field"><span>Name (optional)</span><input id="reviewer" maxlength="50" placeholder="Anonym"></label><label class="field"><span>Sterne</span><select id="rating"><option value="5">★★★★★ – Sehr gut</option><option value="4">★★★★☆ – Gut</option><option value="3">★★★☆☆ – In Ordnung</option><option value="2">★★☆☆☆ – Nicht gut</option><option value="1">★☆☆☆☆ – Schlecht</option></select></label><label class="field"><span>Deine Rezension</span><textarea id="reviewText" maxlength="1000" required></textarea></label><button class="btn primary">Speichern</button></form><p class="muted">Nur lokal in diesem Browser gespeichert.</p></div><div class="panel" id="infoPanel"><p id="info"></p></div></section>
+<div id="navTop" hidden><div id="navIcon">↑</div><div><b id="navDist"></b><div id="navText"></div></div></div>
+<div id="navBot" hidden><div><b id="navEta"></b><span id="navRest" class="muted"></span></div><button class="btn" id="navVoice" aria-label="Sprachansage">🔊</button><button class="btn primary" id="navEnd">Beenden</button></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script><script>
 const $=id=>document.getElementById(id);
 function warn(t){let w=document.getElementById('warn');if(!w){w=document.createElement('div');w.id='warn';document.body.appendChild(w)}w.textContent=t}
@@ -23,36 +26,8 @@ window.addEventListener('load',()=>map.invalidateSize());
 const satellite=L.layerGroup([L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'© Esri'}),L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:19})]);
 let sat=false,place=null,placeKey='',marker=null,userLoc=null,userMarker=null,routeLayer=null,mode='car',watchId=null;
 $('sat').onclick=()=>{sat=!sat;if(sat){map.removeLayer(osm);satellite.addTo(map)}else{map.removeLayer(satellite);osm.addTo(map)}};
-/** 
- * Get the user's current location.
- * 
- * The original implementation rejected when the page was not served over HTTPS
- * (`!window.isSecureContext`). That caused the “Browser sagt abgelehnt” error
- * when you opened the file locally (`file://`).  For development on a local
- * machine we relax the HTTPS check and instead surface a clear warning if the
- * browser really blocks geolocation (e.g., user denied permission).
- */
-function locate(){return new Promise((resolve,reject)=>{
-  // Allow non‑HTTPS local testing – the browser will still prompt for permission.
-  if(!navigator.geolocation){
-    reject(Error('Dieser Browser unterstützt keine Standortbestimmung.'));
-    return;
-  }
-  navigator.geolocation.getCurrentPosition(
-    p=>{showUser(p);resolve(userLoc);},
-    e=>{
-      const msg = e.code===1
-        ? 'Standortberechtigung verweigert. Erlaube den Zugriff für diese Website in den Browser‑Einstellungen.'
-        : e.code===2
-        ? 'Gerätestandort nicht verfügbar. Aktiviere GPS/Standortdienste.'
-        : 'Standortsuche abgelaufen. Bitte erneut versuchen.';
-      reject(Error(msg));
-    },
-    {enableHighAccuracy:true, timeout:30000, maximumAge:15000}
-  );
-});}
-function showUser(p){userLoc={lat:p.coords.latitude,lng:p.coords.longitude};
- if(userMarker)userMarker.setLatLng([userLoc.lat,userLoc.lng]);else userMarker=L.circleMarker([userLoc.lat,userLoc.lng],{radius:8,color:'#fff',weight:3,fillColor:'#1a73e8',fillOpacity:1}).addTo(map)}
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ 
 function setPlace(lat,lon,name,bounds){
  place={lat,lng:lon,name};placeKey=lat.toFixed(4)+','+lon.toFixed(4);
  if(marker)map.removeLayer(marker);marker=L.marker([lat,lon]).addTo(map);
@@ -77,52 +52,55 @@ $('search').addEventListener('input',()=>{clearTimeout(timer);const v=$('search'
  timer=setTimeout(()=>geocode(v,true).catch(()=>{$('results').innerHTML='<div class="result">Suche nicht erreichbar</div>';$('results').classList.add('open')}),450)});
 $('search').addEventListener('keydown',e=>{if(e.key==='Enter')$('results').querySelector('button')?.click()});
 map.on('click',e=>{fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=de&lat='+e.latlng.lat+'&lon='+e.latlng.lng).then(r=>r.json()).then(p=>setPlace(e.latlng.lat,e.latlng.lng,p.display_name||'Kartenauswahl')).catch(()=>setPlace(e.latlng.lat,e.latlng.lng,'Kartenauswahl'))});
-
+ 
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t===b));document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===b.dataset.panel))});
 document.querySelectorAll('[name="origin"]').forEach(r=>r.onchange=()=>{$('fromWrap').hidden=document.querySelector('[name="origin"]:checked').value!=='address'});
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('selected',x===b))});
-
+ 
+function showUser(p){userLoc={lat:p.coords.latitude,lng:p.coords.longitude};
+ if(userMarker)userMarker.setLatLng([userLoc.lat,userLoc.lng]);else userMarker=L.circleMarker([userLoc.lat,userLoc.lng],{radius:8,color:'#fff',weight:3,fillColor:'#1a73e8',fillOpacity:1}).addTo(map)}
+function locate(){return new Promise((resolve,reject)=>{
+ if(!window.isSecureContext){reject(Error('Standortzugriff braucht HTTPS.'));return}
+ if(!navigator.geolocation){reject(Error('Dieser Browser unterstützt keine Standortbestimmung.'));return}
+ navigator.geolocation.getCurrentPosition(p=>{showUser(p);resolve(userLoc)},e=>{
+  const msg=e.code===1?'Standortberechtigung verweigert. Erlaube den Zugriff für diese Website in den Browser-Einstellungen.':e.code===2?'Gerätestandort nicht verfügbar. Aktiviere GPS/Standortdienste.':'Standortsuche abgelaufen. Bitte erneut versuchen.';
+  reject(Error(msg))},{enableHighAccuracy:true,timeout:30000,maximumAge:15000})})}
+$('loc').onclick=()=>(follow=true,locate()).then(l=>map.setView([l.lat,l.lng],15)).catch(e=>alert(e.message));
+ 
+function clearRoute(){if(routeLayer){map.removeLayer(routeLayer);routeLayer=null}$('legs').innerHTML=''}
+const fmt=s=>{let m=Math.max(1,Math.round((+s||0)/60));return m<60?m+' Min.':Math.floor(m/60)+' Std. '+m%60+' Min.'};
+const clock=t=>new Date(t).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+const profiles={car:'https://router.project-osrm.org/route/v1/driving/',bike:'https://routing.openstreetmap.de/routed-bike/route/v1/driving/',foot:'https://routing.openstreetmap.de/routed-foot/route/v1/driving/'};
+const MODES={WALK:'Zu Fuß',BIKE:'Rad',CAR:'Auto',BUS:'Bus',TRAM:'Straßenbahn',SUBWAY:'U-Bahn',RAIL:'Bahn',REGIONAL_RAIL:'Regionalbahn',REGIONAL_FAST_RAIL:'Regionalexpress',HIGHSPEED_RAIL:'ICE',LONG_DISTANCE:'Fernverkehr',NIGHT_RAIL:'Nachtzug',FERRY:'Fähre',SUBURBAN:'S-Bahn'};
 function msg(t,err){$('status').textContent=t;$('status').classList.toggle('error',!!err)}
-
-/** ----------------------------------------------------------------------
-   Real‑time routing (tracking) – ensure it starts automatically when a
-   route is displayed and stops when the sheet is closed.
-   ---------------------------------------------------------------------- */
+ 
 async function startRoute(){
-  clearRoute();$('options').innerHTML='';$('routeOutput').classList.add('open');
-  $('duration').textContent='Route wird gesucht …';$('distance').textContent='';msg('');
-  try{
-    const start=document.querySelector('[name="origin"]:checked').value==='device'?await locate():await geocode($('from').value.trim());
-    const toText=$('to').value.trim();
-    const end=(place&&toText===place.name)?place:await geocode(toText);
-    if(mode==='transit'){
-      const p=new URLSearchParams({fromPlace:start.lat+','+start.lng,toPlace:end.lat+','+end.lng,time:new Date().toISOString(),language:'de',numItineraries:'5'});
-      const r=await fetch('https://api.transitous.org/api/v6/plan?'+p);
-      if(!r.ok)throw Error('ÖPNV-Server antwortet mit Fehler '+r.status);
-      const d=await r.json();
-      if(!d.itineraries||!d.itineraries.length)throw Error('Keine ÖPNV‑Verbindung gefunden');
-      d.itineraries.forEach((j,i)=>{const b=document.createElement('button');b.className='option'+(i?'':' active');
-        b.innerHTML='<b>'+clock(j.startTime)+' → '+clock(j.endTime)+'</b><small>'+fmt(j.duration)+' · '+(j.transfers||0)+' Umstiege</small>';
-        b.onclick=()=>{document.querySelectorAll('.option').forEach(o=>o.classList.toggle('active',o===b));drawTransit(j)};$('options').appendChild(b)});
-      drawTransit(d.itineraries[0]);
-      return;
-    }
-    const r=await fetch(profiles[mode]+start.lng+','+start.lat+';'+end.lng+','+end.lat+'?overview=full&geometries=geojson');
-    if(!r.ok)throw Error('Routen‑Server antwortet mit Fehler '+r.status);
-    const d=await r.json();
-    if(!d.routes||!d.routes.length)throw Error('Keine Route gefunden');
-    const rt=d.routes[0];
-    routeLayer=L.geoJSON(rt.geometry,{style:{color:'#1a73e8',weight:6}}).addTo(map);
-    map.fitBounds(routeLayer.getBounds(),{padding:[50,50],paddingBottomRight:[50,330]});
-    $('duration').textContent=fmt(rt.duration);
-    $('distance').textContent=' · '+(rt.distance/1000).toFixed(1).replace('. ',',')+' km';
-  }catch(e){
-    $('duration').textContent='';
-    msg(e.message==='Failed to fetch'?'Server nicht erreichbar. Prüfe deine Internetverbindung.':e.message,true);
-    return;
-  }finally{
-    if(routeLayer){ track(); }
-  }
+ clearRoute();$('options').innerHTML='';$('routeOutput').classList.add('open');
+ $('duration').textContent='Route wird gesucht …';$('distance').textContent='';msg('');
+ try{
+  const start=document.querySelector('[name="origin"]:checked').value==='device'?await locate():await geocode($('from').value.trim());
+  const toText=$('to').value.trim();
+  const end=(place&&toText===place.name)?place:await geocode(toText);
+  if(mode==='transit'){
+   const p=new URLSearchParams({fromPlace:start.lat+','+start.lng,toPlace:end.lat+','+end.lng,time:new Date().toISOString(),language:'de',numItineraries:'5'});
+   const r=await fetch('https://api.transitous.org/api/v6/plan?'+p);
+   if(!r.ok)throw Error('ÖPNV-Server antwortet mit Fehler '+r.status);
+   const d=await r.json();
+   if(!d.itineraries||!d.itineraries.length)throw Error('Keine ÖPNV-Verbindung gefunden');
+   d.itineraries.forEach((j,i)=>{const b=document.createElement('button');b.className='option'+(i?'':' active');
+    b.innerHTML='<b>'+clock(j.startTime)+' → '+clock(j.endTime)+'</b><small>'+fmt(j.duration)+' · '+(j.transfers||0)+' Umstiege</small>';
+    b.onclick=()=>{document.querySelectorAll('.option').forEach(o=>o.classList.toggle('active',o===b));drawTransit(j)};$('options').appendChild(b)});
+   drawTransit(d.itineraries[0]);return}
+  const r=await fetch(profiles[mode]+start.lng+','+start.lat+';'+end.lng+','+end.lat+'?overview=full&geometries=geojson&steps=true');
+  if(!r.ok)throw Error('Routenserver antwortet mit Fehler '+r.status);
+  const d=await r.json();
+  if(!d.routes||!d.routes.length)throw Error('Keine Route gefunden');
+  const rt=d.routes[0];
+  routeLayer=L.geoJSON(rt.geometry,{style:{color:'#1a73e8',weight:6}}).addTo(map);
+  map.fitBounds(routeLayer.getBounds(),{padding:[50,50],paddingBottomRight:[50,330]});
+  $('duration').textContent=fmt(rt.duration);$('distance').textContent=' · '+(rt.distance/1000).toFixed(1).replace('.',',')+' km';
+  if(document.querySelector('[name="origin"]:checked').value==='device')beginNav(rt,end);else track();
+ }catch(e){$('duration').textContent='';msg(e.message==='Failed to fetch'?'Server nicht erreichbar. Prüfe deine Internetverbindung.':e.message,true)}
 }
 function drawTransit(j){
  clearRoute();routeLayer=L.featureGroup().addTo(map);
@@ -132,19 +110,20 @@ function drawTransit(j){
   const from=l.from&&l.from.name&&l.from.name!=='START'?l.from.name:'Start',to=l.to&&l.to.name&&l.to.name!=='END'?l.to.name:'Ziel';
   d.textContent=name+': '+from+' → '+to+' · '+fmt(l.duration)+(l.realTime?' · Echtzeit':'');$('legs').appendChild(d);
   if(l.legGeometry&&l.legGeometry.points){const pts=decode(l.legGeometry.points,l.legGeometry.precision||6);
-   if(pts.length>1)L.polyline(pts,l.mode==='WALK'?{color:'#667085',weight:5,dashArray:'2 9'}:{color:'#1a73e8',weight:6}).addTo(routeLayer)} });
+   if(pts.length>1)L.polyline(pts,l.mode==='WALK'?{color:'#667085',weight:5,dashArray:'2 9'}:{color:'#1a73e8',weight:6}).addTo(routeLayer)}});
  if(routeLayer.getLayers().length)map.fitBounds(routeLayer.getBounds(),{padding:[50,50],paddingBottomRight:[50,330]});
  $('duration').textContent=fmt(j.duration);$('distance').textContent=' · '+(j.transfers||0)+' Umstiege · '+clock(j.startTime)+'–'+clock(j.endTime);
 }
 function decode(s,p){let i=0,lat=0,lng=0,o=[],f=Math.pow(10,p);while(i<s.length){let b,sh=0,r=0;do{b=s.charCodeAt(i++)-63;r|=(b&31)<<sh;sh+=5}while(b>=32);lat+=(r&1)?~(r>>1):(r>>1);sh=0;r=0;do{b=s.charCodeAt(i++)-63;r|=(b&31)<<sh;sh+=5}while(b>=32);lng+=(r&1)?~(r>>1):(r>>1);o.push([lat/f,lng/f])}return o}
-
+ 
+// Live-Standort während der Navigation
 function track(){if(watchId!==null||!navigator.geolocation)return;
  watchId=navigator.geolocation.watchPosition(showUser,()=>{},{enableHighAccuracy:true,maximumAge:5000});$('stop').hidden=false}
-function stopTrack(){if(watchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(watchId);watchId=null;$('stop').hidden=true}
+function stopTrack(){if(watchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(watchId);watchId=null;$('stop').hidden=true;endNavUI()}
 $('start').onclick=startRoute;
 $('stop').onclick=stopTrack;
 $('close').onclick=e=>{e.preventDefault();stopTrack();$('sheet').classList.remove('open');$('routeOutput').classList.remove('open');clearRoute();$('options').innerHTML='';if(marker){map.removeLayer(marker);marker=null}place=null};
-
+ 
 // Rezensionen (lokal)
 function readReviews(){try{return JSON.parse(localStorage.getItem(STORE)||'{}')}catch(e){return{}}}
 function renderReviews(){const list=readReviews()[placeKey]||[];
@@ -156,5 +135,60 @@ $('reviewForm').onsubmit=e=>{e.preventDefault();const all=readReviews();
  (all[placeKey]||(all[placeKey]=[])).push({name:$('reviewer').value.trim(),rating:+$('rating').value,text:$('reviewText').value.trim(),date:new Date().toISOString()});
  try{localStorage.setItem(STORE,JSON.stringify(all))}catch(x){}
  $('reviewText').value='';renderReviews()};
-
+ 
+// ===== Live-Navigation (Echtzeit) =====
+let NAV=null,follow=true,lastReroute=0,spoken={},voiceOn=true,lock=null;
+const dirs={left:'links','slight left':'leicht links','sharp left':'scharf links',right:'rechts','slight right':'leicht rechts','sharp right':'scharf rechts',straight:'geradeaus',uturn:'wenden'};
+const arrows={left:'↰','slight left':'↖','sharp left':'↰',right:'↱','slight right':'↗','sharp right':'↱',straight:'↑',uturn:'⤶'};
+function instr(s){const m=s.maneuver||{},t=m.type,d=dirs[m.modifier]||'',n=s.name?(' auf '+s.name):'';
+ if(t==='depart')return'Starte'+n;if(t==='arrive')return'Ziel erreicht';
+ if(t==='roundabout'||t==='rotary'||t==='roundabout turn')return'Im Kreisverkehr die '+(m.exit||1)+'. Ausfahrt nehmen'+n;
+ if(t==='fork')return'An der Gabelung '+d+' halten'+n;if(t==='merge')return'Einfädeln'+n;
+ if(t==='on ramp')return'Auffahrt nehmen'+n;if(t==='off ramp')return'Ausfahrt nehmen'+n;
+ if(t==='end of road')return'Am Ende der Straße '+d+' abbiegen'+n;
+ if(t==='new name'||t==='continue'||m.modifier==='straight')return'Geradeaus weiter'+n;
+ if(m.modifier==='uturn')return'Bitte wenden';
+ return d?d.charAt(0).toUpperCase()+d.slice(1)+' abbiegen'+n:'Weiter'+n}
+const fd=m=>m<1000?(Math.round(m/10)*10)+' m':(m/1000).toFixed(1).replace('.',',')+' km';
+function prep(rt){const c=rt.geometry.coordinates.map(a=>[a[1],a[0]]),cum=[0];
+ for(let i=1;i<c.length;i++)cum.push(cum[i-1]+L.latLng(c[i-1]).distanceTo(L.latLng(c[i])));
+ const steps=[].concat(...rt.legs.map(l=>l.steps));let k=0;
+ const at=steps.map(s=>{const ml=L.latLng(s.maneuver.location[1],s.maneuver.location[0]);let best=k,bd=1e12;
+  for(let i=k;i<c.length;i++){const d=ml.distanceTo(L.latLng(c[i]));if(d<bd){bd=d;best=i}}k=best;return cum[best]});
+ return{c,cum,steps,at,total:cum[cum.length-1]||1,dur:rt.duration}}
+function project(p,r){const kx=111320*Math.cos(p.lat*Math.PI/180),ky=110540;let bd=1e12,bp=0;
+ for(let i=0;i<r.c.length-1;i++){const a=r.c[i],b=r.c[i+1],ax=(a[1]-p.lng)*kx,ay=(a[0]-p.lat)*ky,bx=(b[1]-p.lng)*kx,by=(b[0]-p.lat)*ky,dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy;
+  let t=l2?-(ax*dx+ay*dy)/l2:0;t=Math.max(0,Math.min(1,t));const d=Math.hypot(ax+t*dx,ay+t*dy);
+  if(d<bd){bd=d;bp=r.cum[i]+t*(r.cum[i+1]-r.cum[i])}}
+ return{dist:bd,prog:bp}}
+function say(t){if(!voiceOn||!window.speechSynthesis)return;const u=new SpeechSynthesisUtterance(t);u.lang='de-DE';speechSynthesis.cancel();speechSynthesis.speak(u)}
+function drawNavRoute(rt){if(routeLayer)map.removeLayer(routeLayer);routeLayer=L.geoJSON(rt.geometry,{style:{color:'#1a73e8',weight:7}}).addTo(map)}
+function beginNav(rt,end){stopTrack();if(!navigator.geolocation)return;
+ NAV={r:prep(rt),end:{lat:end.lat,lng:end.lng},rt:rt};follow=true;spoken={};
+ document.body.classList.add('navigating');$('navTop').hidden=false;$('navBot').hidden=false;$('sheet').classList.remove('open');
+ $('navText').textContent='Standort wird ermittelt …';$('navDist').textContent='';
+ if(navigator.wakeLock)navigator.wakeLock.request('screen').then(l=>lock=l).catch(()=>{});
+ watchId=navigator.geolocation.watchPosition(navUpdate,()=>{$('navText').textContent='GPS-Signal fehlt …'},{enableHighAccuracy:true,maximumAge:1000,timeout:20000})}
+function navUpdate(pos){showUser(pos);if(!NAV)return;const p=userLoc;
+ if(follow)map.setView([p.lat,p.lng],Math.max(map.getZoom(),17),{animate:true});
+ const pr=project(p,NAV.r),rest=NAV.r.total-pr.prog,toEnd=L.latLng(p.lat,p.lng).distanceTo(L.latLng(NAV.end.lat,NAV.end.lng));
+ if(toEnd<30||rest<20){$('navIcon').textContent='⚑';$('navDist').textContent='';$('navText').textContent='Du hast dein Ziel erreicht';say('Du hast dein Ziel erreicht');
+  if(watchId!==null)navigator.geolocation.clearWatch(watchId);watchId=null;return}
+ if(pr.dist>45&&Date.now()-lastReroute>8000){lastReroute=Date.now();reroute(p)}
+ let j=NAV.r.at.findIndex((a,i)=>i>0&&a>pr.prog+8);if(j<0)j=NAV.r.steps.length-1;
+ const s=NAV.r.steps[j],dn=Math.max(0,NAV.r.at[j]-pr.prog),txt=instr(s);
+ $('navDist').textContent=fd(dn);$('navText').textContent=txt;$('navIcon').textContent=s.maneuver.type==='arrive'?'⚑':(arrows[s.maneuver.modifier]||'↑');
+ const secs=NAV.r.dur*(rest/NAV.r.total);
+ $('navEta').textContent=clock(Date.now()+secs*1000)+' Uhr';$('navRest').textContent=' · '+fmt(secs)+' · '+fd(rest);
+ if(dn<350&&dn>120&&!spoken[j+'a']){spoken[j+'a']=1;say('In '+fd(dn)+', '+txt)}
+ else if(dn<=120&&!spoken[j+'b']){spoken[j+'b']=1;say(txt)}}
+function reroute(p){$('navText').textContent='Route wird neu berechnet …';
+ fetch(profiles[mode]+p.lng+','+p.lat+';'+NAV.end.lng+','+NAV.end.lat+'?overview=full&geometries=geojson&steps=true').then(r=>r.json()).then(d=>{
+  if(!NAV||!d.routes||!d.routes.length)return;NAV.rt=d.routes[0];NAV.r=prep(d.routes[0]);spoken={};drawNavRoute(d.routes[0]);say('Route neu berechnet')}).catch(()=>{})}
+function endNavUI(){NAV=null;document.body.classList.remove('navigating');$('navTop').hidden=true;$('navBot').hidden=true;if(lock){lock.release().catch(()=>{});lock=null}
+ if(window.speechSynthesis)speechSynthesis.cancel();if(place)$('sheet').classList.add('open')}
+map.on('dragstart',()=>{if(NAV)follow=false});
+$('navEnd').onclick=stopTrack;
+$('navVoice').onclick=()=>{voiceOn=!voiceOn;$('navVoice').textContent=voiceOn?'Stummschalten':'Stummschaltung Aufheben';if(!voiceOn&&window.speechSynthesis)speechSynthesis.cancel()};
 </script></body></html>
+ 
