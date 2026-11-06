@@ -23,8 +23,36 @@ window.addEventListener('load',()=>map.invalidateSize());
 const satellite=L.layerGroup([L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'© Esri'}),L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:19})]);
 let sat=false,place=null,placeKey='',marker=null,userLoc=null,userMarker=null,routeLayer=null,mode='car',watchId=null;
 $('sat').onclick=()=>{sat=!sat;if(sat){map.removeLayer(osm);satellite.addTo(map)}else{map.removeLayer(satellite);osm.addTo(map)}};
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
+/** 
+ * Get the user's current location.
+ * 
+ * The original implementation rejected when the page was not served over HTTPS
+ * (`!window.isSecureContext`). That caused the “Browser sagt abgelehnt” error
+ * when you opened the file locally (`file://`).  For development on a local
+ * machine we relax the HTTPS check and instead surface a clear warning if the
+ * browser really blocks geolocation (e.g., user denied permission).
+ */
+function locate(){return new Promise((resolve,reject)=>{
+  // Allow non‑HTTPS local testing – the browser will still prompt for permission.
+  if(!navigator.geolocation){
+    reject(Error('Dieser Browser unterstützt keine Standortbestimmung.'));
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    p=>{showUser(p);resolve(userLoc);},
+    e=>{
+      const msg = e.code===1
+        ? 'Standortberechtigung verweigert. Erlaube den Zugriff für diese Website in den Browser‑Einstellungen.'
+        : e.code===2
+        ? 'Gerätestandort nicht verfügbar. Aktiviere GPS/Standortdienste.'
+        : 'Standortsuche abgelaufen. Bitte erneut versuchen.';
+      reject(Error(msg));
+    },
+    {enableHighAccuracy:true, timeout:30000, maximumAge:15000}
+  );
+});}
+function showUser(p){userLoc={lat:p.coords.latitude,lng:p.coords.longitude};
+ if(userMarker)userMarker.setLatLng([userLoc.lat,userLoc.lng]);else userMarker=L.circleMarker([userLoc.lat,userLoc.lng],{radius:8,color:'#fff',weight:3,fillColor:'#1a73e8',fillOpacity:1}).addTo(map)}
 function setPlace(lat,lon,name,bounds){
  place={lat,lng:lon,name};placeKey=lat.toFixed(4)+','+lon.toFixed(4);
  if(marker)map.removeLayer(marker);marker=L.marker([lat,lon]).addTo(map);
@@ -54,50 +82,47 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelect
 document.querySelectorAll('[name="origin"]').forEach(r=>r.onchange=()=>{$('fromWrap').hidden=document.querySelector('[name="origin"]:checked').value!=='address'});
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('selected',x===b))});
 
-function showUser(p){userLoc={lat:p.coords.latitude,lng:p.coords.longitude};
- if(userMarker)userMarker.setLatLng([userLoc.lat,userLoc.lng]);else userMarker=L.circleMarker([userLoc.lat,userLoc.lng],{radius:8,color:'#fff',weight:3,fillColor:'#1a73e8',fillOpacity:1}).addTo(map)}
-function locate(){return new Promise((resolve,reject)=>{
- if(!window.isSecureContext){reject(Error('Standortzugriff braucht HTTPS.'));return}
- if(!navigator.geolocation){reject(Error('Dieser Browser unterstützt keine Standortbestimmung.'));return}
- navigator.geolocation.getCurrentPosition(p=>{showUser(p);resolve(userLoc)},e=>{
-  const msg=e.code===1?'Standortberechtigung verweigert. Erlaube den Zugriff für diese Website in den Browser-Einstellungen.':e.code===2?'Gerätestandort nicht verfügbar. Aktiviere GPS/Standortdienste.':'Standortsuche abgelaufen. Bitte erneut versuchen.';
-  reject(Error(msg))},{enableHighAccuracy:true,timeout:30000,maximumAge:15000})})}
-$('loc').onclick=()=>locate().then(l=>map.setView([l.lat,l.lng],15)).catch(e=>alert(e.message));
-
-function clearRoute(){if(routeLayer){map.removeLayer(routeLayer);routeLayer=null}$('legs').innerHTML=''}
-const fmt=s=>{let m=Math.max(1,Math.round((+s||0)/60));return m<60?m+' Min.':Math.floor(m/60)+' Std. '+m%60+' Min.'};
-const clock=t=>new Date(t).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-const profiles={car:'https://router.project-osrm.org/route/v1/driving/',bike:'https://routing.openstreetmap.de/routed-bike/route/v1/driving/',foot:'https://routing.openstreetmap.de/routed-foot/route/v1/driving/'};
-const MODES={WALK:'Zu Fuß',BIKE:'Rad',CAR:'Auto',BUS:'Bus',TRAM:'Straßenbahn',SUBWAY:'U-Bahn',RAIL:'Bahn',REGIONAL_RAIL:'Regionalbahn',REGIONAL_FAST_RAIL:'Regionalexpress',HIGHSPEED_RAIL:'ICE',LONG_DISTANCE:'Fernverkehr',NIGHT_RAIL:'Nachtzug',FERRY:'Fähre',SUBURBAN:'S-Bahn'};
 function msg(t,err){$('status').textContent=t;$('status').classList.toggle('error',!!err)}
 
+/** ----------------------------------------------------------------------
+   Real‑time routing (tracking) – ensure it starts automatically when a
+   route is displayed and stops when the sheet is closed.
+   ---------------------------------------------------------------------- */
 async function startRoute(){
- clearRoute();$('options').innerHTML='';$('routeOutput').classList.add('open');
- $('duration').textContent='Route wird gesucht …';$('distance').textContent='';msg('');
- try{
-  const start=document.querySelector('[name="origin"]:checked').value==='device'?await locate():await geocode($('from').value.trim());
-  const toText=$('to').value.trim();
-  const end=(place&&toText===place.name)?place:await geocode(toText);
-  if(mode==='transit'){
-   const p=new URLSearchParams({fromPlace:start.lat+','+start.lng,toPlace:end.lat+','+end.lng,time:new Date().toISOString(),language:'de',numItineraries:'5'});
-   const r=await fetch('https://api.transitous.org/api/v6/plan?'+p);
-   if(!r.ok)throw Error('ÖPNV-Server antwortet mit Fehler '+r.status);
-   const d=await r.json();
-   if(!d.itineraries||!d.itineraries.length)throw Error('Keine ÖPNV-Verbindung gefunden');
-   d.itineraries.forEach((j,i)=>{const b=document.createElement('button');b.className='option'+(i?'':' active');
-    b.innerHTML='<b>'+clock(j.startTime)+' → '+clock(j.endTime)+'</b><small>'+fmt(j.duration)+' · '+(j.transfers||0)+' Umstiege</small>';
-    b.onclick=()=>{document.querySelectorAll('.option').forEach(o=>o.classList.toggle('active',o===b));drawTransit(j)};$('options').appendChild(b)});
-   drawTransit(d.itineraries[0]);return}
-  const r=await fetch(profiles[mode]+start.lng+','+start.lat+';'+end.lng+','+end.lat+'?overview=full&geometries=geojson');
-  if(!r.ok)throw Error('Routenserver antwortet mit Fehler '+r.status);
-  const d=await r.json();
-  if(!d.routes||!d.routes.length)throw Error('Keine Route gefunden');
-  const rt=d.routes[0];
-  routeLayer=L.geoJSON(rt.geometry,{style:{color:'#1a73e8',weight:6}}).addTo(map);
-  map.fitBounds(routeLayer.getBounds(),{padding:[50,50],paddingBottomRight:[50,330]});
-  $('duration').textContent=fmt(rt.duration);$('distance').textContent=' · '+(rt.distance/1000).toFixed(1).replace('.',',')+' km';
-  track();
- }catch(e){$('duration').textContent='';msg(e.message==='Failed to fetch'?'Server nicht erreichbar. Prüfe deine Internetverbindung.':e.message,true)}
+  clearRoute();$('options').innerHTML='';$('routeOutput').classList.add('open');
+  $('duration').textContent='Route wird gesucht …';$('distance').textContent='';msg('');
+  try{
+    const start=document.querySelector('[name="origin"]:checked').value==='device'?await locate():await geocode($('from').value.trim());
+    const toText=$('to').value.trim();
+    const end=(place&&toText===place.name)?place:await geocode(toText);
+    if(mode==='transit'){
+      const p=new URLSearchParams({fromPlace:start.lat+','+start.lng,toPlace:end.lat+','+end.lng,time:new Date().toISOString(),language:'de',numItineraries:'5'});
+      const r=await fetch('https://api.transitous.org/api/v6/plan?'+p);
+      if(!r.ok)throw Error('ÖPNV-Server antwortet mit Fehler '+r.status);
+      const d=await r.json();
+      if(!d.itineraries||!d.itineraries.length)throw Error('Keine ÖPNV‑Verbindung gefunden');
+      d.itineraries.forEach((j,i)=>{const b=document.createElement('button');b.className='option'+(i?'':' active');
+        b.innerHTML='<b>'+clock(j.startTime)+' → '+clock(j.endTime)+'</b><small>'+fmt(j.duration)+' · '+(j.transfers||0)+' Umstiege</small>';
+        b.onclick=()=>{document.querySelectorAll('.option').forEach(o=>o.classList.toggle('active',o===b));drawTransit(j)};$('options').appendChild(b)});
+      drawTransit(d.itineraries[0]);
+      return;
+    }
+    const r=await fetch(profiles[mode]+start.lng+','+start.lat+';'+end.lng+','+end.lat+'?overview=full&geometries=geojson');
+    if(!r.ok)throw Error('Routen‑Server antwortet mit Fehler '+r.status);
+    const d=await r.json();
+    if(!d.routes||!d.routes.length)throw Error('Keine Route gefunden');
+    const rt=d.routes[0];
+    routeLayer=L.geoJSON(rt.geometry,{style:{color:'#1a73e8',weight:6}}).addTo(map);
+    map.fitBounds(routeLayer.getBounds(),{padding:[50,50],paddingBottomRight:[50,330]});
+    $('duration').textContent=fmt(rt.duration);
+    $('distance').textContent=' · '+(rt.distance/1000).toFixed(1).replace('. ',',')+' km';
+  }catch(e){
+    $('duration').textContent='';
+    msg(e.message==='Failed to fetch'?'Server nicht erreichbar. Prüfe deine Internetverbindung.':e.message,true);
+    return;
+  }finally{
+    if(routeLayer){ track(); }
+  }
 }
 function drawTransit(j){
  clearRoute();routeLayer=L.featureGroup().addTo(map);
@@ -107,13 +132,12 @@ function drawTransit(j){
   const from=l.from&&l.from.name&&l.from.name!=='START'?l.from.name:'Start',to=l.to&&l.to.name&&l.to.name!=='END'?l.to.name:'Ziel';
   d.textContent=name+': '+from+' → '+to+' · '+fmt(l.duration)+(l.realTime?' · Echtzeit':'');$('legs').appendChild(d);
   if(l.legGeometry&&l.legGeometry.points){const pts=decode(l.legGeometry.points,l.legGeometry.precision||6);
-   if(pts.length>1)L.polyline(pts,l.mode==='WALK'?{color:'#667085',weight:5,dashArray:'2 9'}:{color:'#1a73e8',weight:6}).addTo(routeLayer)}});
+   if(pts.length>1)L.polyline(pts,l.mode==='WALK'?{color:'#667085',weight:5,dashArray:'2 9'}:{color:'#1a73e8',weight:6}).addTo(routeLayer)} });
  if(routeLayer.getLayers().length)map.fitBounds(routeLayer.getBounds(),{padding:[50,50],paddingBottomRight:[50,330]});
  $('duration').textContent=fmt(j.duration);$('distance').textContent=' · '+(j.transfers||0)+' Umstiege · '+clock(j.startTime)+'–'+clock(j.endTime);
 }
 function decode(s,p){let i=0,lat=0,lng=0,o=[],f=Math.pow(10,p);while(i<s.length){let b,sh=0,r=0;do{b=s.charCodeAt(i++)-63;r|=(b&31)<<sh;sh+=5}while(b>=32);lat+=(r&1)?~(r>>1):(r>>1);sh=0;r=0;do{b=s.charCodeAt(i++)-63;r|=(b&31)<<sh;sh+=5}while(b>=32);lng+=(r&1)?~(r>>1):(r>>1);o.push([lat/f,lng/f])}return o}
 
-// Live-Standort während der Navigation
 function track(){if(watchId!==null||!navigator.geolocation)return;
  watchId=navigator.geolocation.watchPosition(showUser,()=>{},{enableHighAccuracy:true,maximumAge:5000});$('stop').hidden=false}
 function stopTrack(){if(watchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(watchId);watchId=null;$('stop').hidden=true}
@@ -132,4 +156,5 @@ $('reviewForm').onsubmit=e=>{e.preventDefault();const all=readReviews();
  (all[placeKey]||(all[placeKey]=[])).push({name:$('reviewer').value.trim(),rating:+$('rating').value,text:$('reviewText').value.trim(),date:new Date().toISOString()});
  try{localStorage.setItem(STORE,JSON.stringify(all))}catch(x){}
  $('reviewText').value='';renderReviews()};
+
 </script></body></html>
